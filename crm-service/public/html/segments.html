@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Segments | Xeno CRM</title>
+  <meta name="description" content="Explore computed customer segments and view individual members.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">✦</div>
+        <span>Xeno CRM</span>
+      </div>
+
+      <ul class="sidebar-menu">
+        <div class="sidebar-section-label">Overview</div>
+        <li>
+          <a href="/marketer">
+            <span class="nav-icon">⊞</span> Dashboard
+          </a>
+        </li>
+        
+        <div class="sidebar-section-label">Management</div>
+        <li class="active">
+          <a href="/segments">
+            <span class="nav-icon">◈</span> Segments
+          </a>
+        </li>
+        <li>
+          <a href="/campaigns">
+            <span class="nav-icon">◎</span> Campaigns
+          </a>
+        </li>
+        
+        <div class="sidebar-section-label">Analytics & AI</div>
+        <li>
+          <a href="/analytics">
+            <span class="nav-icon">△</span> Analytics
+          </a>
+        </li>
+        <li>
+          <a href="/copilot">
+            <span class="nav-icon">◇</span> AI Assistant
+          </a>
+        </li>
+
+        <div class="sidebar-section-label">System</div>
+        <li>
+          <a href="#" style="opacity: 0.6; cursor: not-allowed;" onclick="event.preventDefault();">
+            <span class="nav-icon">⚙</span> Settings
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-badge">
+          <div class="user-avatar" id="sidebar-user-avatar">M</div>
+          <div class="user-details">
+            <span class="user-name" id="sidebar-user-name">Loading...</span>
+            <span class="user-role" id="sidebar-user-role">Marketer</span>
+          </div>
+        </div>
+        <a href="#" class="btn btn-secondary btn-full btn-sm" id="btn-logout">Sign out</a>
+      </div>
+    </nav>
+
+    <!-- ── MAIN CONTENT ── -->
+    <main class="main-content">
+
+      <div class="content-header">
+        <div class="header-title">
+          <h1>Customer Segments</h1>
+          <p>Auto-computed shopper groupings based on purchasing behavior</p>
+        </div>
+      </div>
+
+      <!-- Segments Grid -->
+      <div class="segments-grid" id="segments-list-grid">
+        <div class="loading-state" style="grid-column: 1/-1; text-align: center; padding: 2rem 0; color: var(--text-3);">
+          <span>Loading segments...</span>
+        </div>
+      </div>
+
+      <!-- Segment Details Section (initially hidden) -->
+      <div id="segment-details-section" class="segment-detail-section" style="display:none;">
+        <div class="segment-detail-header">
+          <div>
+            <h2 id="active-segment-title" style="font-size:1.2rem; color: var(--text-1);">Segment Name</h2>
+            <p id="active-segment-desc" style="font-size:0.85rem; color:var(--text-2); margin-top:0.2rem;"></p>
+          </div>
+          <span class="badge badge-accent" id="active-segment-badge" style="padding:0.35rem 0.75rem;">0 Customers</span>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Joined Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="segment-users-table-body">
+              <tr>
+                <td colspan="4" style="text-align:center; color:var(--text-3); padding:2rem;">No customers in this segment.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/segments.js"></script>
+</body>
+</html>

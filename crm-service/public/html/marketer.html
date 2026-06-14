@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Xeno CRM</title>
+  <meta name="description" content="Marketer dashboard — overview of your CRM performance.">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Compact layout adjustments to preserve design visually */
+    .dashboard-layout-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    .widget-row-split {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 2rem;
+    }
+    @media (max-width: 900px) {
+      .widget-row-split {
+        grid-template-columns: 1fr;
+      }
+    }
+    /* Todo items list */
+    .todo-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--bg-base);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+    .todo-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+    .todo-item.completed label {
+      text-decoration: line-through;
+      color: var(--text-3);
+    }
+    .todo-item label {
+      font-size: 0.875rem;
+      color: var(--text-1);
+      cursor: pointer;
+      flex-grow: 1;
+    }
+    .todo-item .todo-action-link {
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    /* Mini AI Assistant widget */
+    .mini-chat-messages {
+      height: 200px;
+      overflow-y: auto;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    /* Segment table overlay/detail modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">✦</div>
+        <span>Xeno CRM</span>
+      </div>
+
+      <ul class="sidebar-menu">
+        <div class="sidebar-section-label">Overview</div>
+        <li class="active">
+          <a href="/marketer">
+            <span class="nav-icon">⊞</span> Dashboard
+          </a>
+        </li>
+        
+        <div class="sidebar-section-label">Management</div>
+        <li>
+          <a href="/campaigns">
+            <span class="nav-icon">◎</span> Campaigns
+          </a>
+        </li>
+        
+        <div class="sidebar-section-label">Analytics & AI</div>
+        <li>
+          <a href="/analytics">
+            <span class="nav-icon">△</span> Analytics
+          </a>
+        </li>
+        <li>
+          <a href="/copilot">
+            <span class="nav-icon">◇</span> AI Assistant
+          </a>
+        </li>
+
+        <div class="sidebar-section-label">System</div>
+        <li>
+          <a href="/settings">
+            <span class="nav-icon">⚙</span> Settings
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-badge">
+          <div class="user-avatar" id="sidebar-user-avatar">M</div>
+          <div class="user-details">
+            <span class="user-name" id="sidebar-user-name">Loading...</span>
+            <span class="user-role" id="sidebar-user-role">Marketer</span>
+          </div>
+        </div>
+        <a href="#" class="btn btn-secondary btn-full btn-sm" id="btn-logout">Sign out</a>
+      </div>
+    </nav>
+
+    <!-- ── MAIN CONTENT ── -->
+    <main class="main-content">
+
+      <!-- Header -->
+      <div class="content-header">
+        <div class="header-title">
+          <h1 id="welcome-heading">Good morning</h1>
+          <p>Here's what's happening with your customers today</p>
+        </div>
+      </div>
+
+      <!-- DYNAMIC WIDGETS CONTAINER -->
+      <div class="dashboard-layout-grid" id="widgets-container">
+
+        <!-- 1. KPI WIDGET -->
+        <div id="widget-kpis" style="width: 100%;">
+          <div class="card-grid" id="kpi-grid">
+            <div class="card card-kpi" id="card-success-rate">
+              <span class="kpi-title">Campaign Success Rate</span>
+              <span class="kpi-value" id="kpi-success-rate">—</span>
+              <span class="kpi-trend">Conversions / sent</span>
+            </div>
+            <div class="card card-kpi" id="card-revenue-influenced">
+              <span class="kpi-title">Revenue Influenced</span>
+              <span class="kpi-value" id="kpi-revenue-influenced">—</span>
+              <span class="kpi-trend">Campaign sales</span>
+            </div>
+            <div class="card card-kpi" id="card-revenue">
+              <span class="kpi-title">Total Revenue</span>
+              <span class="kpi-value" id="kpi-revenue">—</span>
+              <span class="kpi-trend" id="revenue-ai-recommendation">All-time total</span>
+            </div>
+            <div class="card card-kpi" id="card-campaigns">
+              <span class="kpi-title">Campaigns Sent</span>
+              <span class="kpi-value" id="kpi-campaigns">—</span>
+              <span class="kpi-trend" id="campaigns-ai-recommendation">Dispatched flow</span>
+            </div>
+            <div class="card card-kpi" id="card-customers">
+              <span class="kpi-title">Total Customers</span>
+              <span class="kpi-value" id="kpi-customers">—</span>
+              <span class="kpi-trend">Active profiles</span>
+            </div>
+            <div class="card card-kpi" id="card-orders">
+              <span class="kpi-title">Total Orders</span>
+              <span class="kpi-value" id="kpi-orders">—</span>
+              <span class="kpi-trend">Transaction count</span>
+            </div>
+            <div class="card card-kpi" id="card-aov">
+              <span class="kpi-title">Avg. Order Value</span>
+              <span class="kpi-value" id="kpi-aov">—</span>
+              <span class="kpi-trend">Average basket size</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. ANALYTICS GRAPH WIDGET (Directly on Dashboard) -->
+        <div id="widget-analytics" class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h3 style="font-size: 1.15rem; color: var(--text-1); margin: 0;">Performance Analytics</h3>
+              <p style="font-size: 0.8rem; color: var(--text-3); margin-top: 0.25rem;">Live revenue trends and campaign performance metrics</p>
+            </div>
+            <!-- Timeframe Filter -->
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <select id="analytics-timeframe" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.75rem; width: auto; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-1);">
+                <option value="7days">Last 7 days</option>
+                <option value="30days">Last 30 days</option>
+                <option value="2months">Last 2 months</option>
+                <option value="6months" selected>Last 6 months</option>
+                <option value="custom">Custom Range</option>
+              </select>
+              <!-- Custom dates -->
+              <div id="custom-date-container" style="display: none; gap: 0.5rem; align-items: center;">
+                <input type="date" id="analytics-start-date" class="form-control" style="font-size: 0.85rem; padding: 0.35rem 0.5rem; width: auto; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-1);">
+                <span style="color: var(--text-3); font-size: 0.85rem;">to</span>
+                <input type="date" id="analytics-end-date" class="form-control" style="font-size: 0.85rem; padding: 0.35rem 0.5rem; width: auto; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-1);">
+                <button id="btn-apply-custom-dates" class="btn btn-secondary btn-sm" style="padding: 0.4rem 0.75rem;">Apply</button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Side-by-side Graphs -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+            <div style="min-height: 280px; background: var(--bg-base); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border); position: relative;">
+              <h4 style="font-size: 0.9rem; color: var(--text-2); margin-bottom: 1rem; text-align: center; font-weight: 600;">Revenue Trend</h4>
+              <div style="position: relative; height: 220px; width: 100%;">
+                <canvas id="chart-revenue-trend"></canvas>
+              </div>
+            </div>
+            <div style="min-height: 280px; background: var(--bg-base); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border); position: relative;">
+              <h4 style="font-size: 0.9rem; color: var(--text-2); margin-bottom: 1rem; text-align: center; font-weight: 600;">Campaign Conversions</h4>
+              <div style="position: relative; height: 220px; width: 100%;">
+                <canvas id="chart-campaign-performance"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. SPLIT ROW WIDGETS (TODAYS TASKS + RECENT ACTIVITY) -->
+        <div id="widget-tasks-activity" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; width: 100%;">
+          
+          <!-- Today's Tasks -->
+          <div id="widget-today-tasks" class="card" style="margin: 0;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--text-1);">Today's Tasks</h3>
+            
+            <!-- Add task input -->
+            <form id="todo-add-form" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
+              <input type="text" id="todo-add-input" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;" placeholder="Add new task..." required autocomplete="off">
+              <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">Add</button>
+            </form>
+
+            <ul class="todo-list" id="todo-list-container">
+              <li style="color:var(--text-3); font-size:0.875rem; text-align:center; padding:1rem;">Loading tasks...</li>
+            </ul>
+          </div>
+
+          <!-- Recent Activity -->
+          <div id="widget-recent-activity" class="card" style="margin: 0;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem; color: var(--text-1);">Recent Activity</h3>
+            <div class="timeline" id="dashboard-timeline">
+              <p style="font-size:0.875rem; color:var(--text-3); text-align:center; padding:1.5rem 0;">Loading activity timeline...</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 4. QUICK ACTIONS WIDGET -->
+        <div id="widget-quick-actions" style="width: 100%;">
+          <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem; color: var(--text-1);">Quick Actions</h3>
+          <div class="quick-actions-grid">
+            <a href="/campaigns" class="quick-action-card">
+              <div class="quick-action-icon">◎</div>
+              <div class="quick-action-title">Create Campaign</div>
+              <div class="quick-action-desc">Draft targeted messages using AI generation</div>
+              <div class="quick-action-arrow">→</div>
+            </a>
+            
+            <a href="#widget-analytics" class="quick-action-card">
+              <div class="quick-action-icon">△</div>
+              <div class="quick-action-title">View Analytics</div>
+              <div class="quick-action-desc">Track trends, order status, and segment performance</div>
+              <div class="quick-action-arrow">→</div>
+            </a>
+
+            <a href="/copilot" class="quick-action-card">
+              <div class="quick-action-icon">◇</div>
+              <div class="quick-action-title">Ask AI Assistant</div>
+              <div class="quick-action-desc">Chat with the copilot to plan strategies</div>
+              <div class="quick-action-arrow">→</div>
+            </a>
+            
+            <a href="/settings" class="quick-action-card">
+              <div class="quick-action-icon">⚙</div>
+              <div class="quick-action-title">Customization</div>
+              <div class="quick-action-desc">Rearrange or toggle dashboard widgets</div>
+              <div class="quick-action-arrow">→</div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Placeholder for AI Assistant preference management -->
+        <div id="widget-ai-assistant-widget" style="display: none;"></div>
+
+        <!-- 5. SEGMENTS WIDGET (Hidden by default, enableable via Settings) -->
+        <div id="widget-segments-widget" class="card" style="display: none; width: 100%;">
+          <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem; color: var(--text-1);">Customer Segments</h3>
+          <div class="segments-grid" id="segments-list-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Segment Detail Modal (rendered inside the dashboard when clicked) -->
+      <div id="segment-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
+            <div>
+              <h2 id="modal-segment-title" style="font-size:1.2rem; color:var(--text-1);">Segment Detail</h2>
+              <p id="modal-segment-desc" style="font-size:0.85rem; color:var(--text-2); margin-top:0.25rem;"></p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="closeSegmentModal()">Close</button>
+          </div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Joined Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="modal-users-table-body">
+                <tr>
+                  <td colspan="4" style="text-align:center; padding:2rem; color:var(--text-3);">Loading users...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Floating Action Button for AI assistant -->
+  <button id="floating-ai-btn" style="position: fixed; bottom: 2rem; right: 2rem; z-index: 999; display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: var(--accent); color: white; border: none; border-radius: 50px; font-weight: 600; font-size: 0.9rem; cursor: pointer; box-shadow: var(--shadow-lg); transition: transform 0.2s ease;">
+    <span>✦</span> Xeno AI
+  </button>
+
+  <!-- Floating Chat Window -->
+  <div id="floating-ai-drawer" style="display: none; position: fixed; bottom: 5.5rem; right: 2rem; width: 360px; max-height: 500px; z-index: 999; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); flex-direction: column; overflow: hidden;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); background: var(--bg-base);">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: var(--accent); font-weight: bold;">✦</span>
+        <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-1);">Xeno AI Assistant</span>
+      </div>
+      <button id="close-ai-drawer-btn" style="background: none; border: none; color: var(--text-3); font-size: 1.2rem; cursor: pointer;">&times;</button>
+    </div>
+    <div style="flex-grow: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; height: 320px;" id="floating-chat-box">
+      <div style="font-size:0.85rem; color:var(--text-2);">
+        <strong>Xeno AI:</strong> Hello! Ask me anything about campaign optimizations, targeting segments, timing, or analytics.
+      </div>
+    </div>
+    <form id="floating-chat-form" style="display: flex; gap: 0.5rem; padding: 0.75rem; border-top: 1px solid var(--border); background: var(--bg-base);">
+      <input type="text" id="floating-chat-input" class="form-control" style="font-size: 0.85rem; padding: 0.5rem;" placeholder="Ask AI Assistant..." required autocomplete="off">
+      <button type="submit" class="btn btn-primary btn-sm" id="btn-floating-chat-send" style="padding: 0.5rem 0.75rem; font-size: 0.85rem;">Send</button>
+    </form>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/marketer.js"></script>
+</body>
+</html>

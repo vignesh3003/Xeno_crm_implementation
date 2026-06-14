@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Insights | Xeno CRM</title>
+  <meta name="description" content="AI-generated marketing insights and recommendations for each customer segment.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">✦</div>
+        <span>Xeno CRM</span>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li><a href="/marketer"><span class="nav-icon">⊞</span> Dashboard</a></li>
+        <li><a href="/segments"><span class="nav-icon">◈</span> Segments</a></li>
+        <li class="active"><a href="/insights"><span class="nav-icon">✦</span> AI Insights</a></li>
+        <li><a href="/campaigns"><span class="nav-icon">◎</span> Campaigns</a></li>
+        <li><a href="/analytics"><span class="nav-icon">△</span> Analytics</a></li>
+        <li><a href="/copilot"><span class="nav-icon">◇</span> AI Copilot</a></li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-badge">
+          <div class="user-avatar" id="sidebar-user-avatar">M</div>
+          <div class="user-details">
+            <span class="user-name" id="sidebar-user-name">Loading...</span>
+            <span class="user-role" id="sidebar-user-role">Marketer</span>
+          </div>
+        </div>
+        <a href="#" class="btn btn-secondary btn-full btn-sm" id="btn-logout">Sign out</a>
+      </div>
+    </nav>
+
+    <!-- ── MAIN ── -->
+    <main class="main-content">
+
+      <div class="content-header">
+        <div class="header-title">
+          <h1>AI Insights</h1>
+          <p>AI-generated observations and recommendations for each customer segment</p>
+        </div>
+        <button class="btn btn-secondary" onclick="loadInsights()" id="btn-refresh-insights">Refresh</button>
+      </div>
+
+      <!-- Loading -->
+      <div id="insights-loading" class="loading-state">
+        <div class="spinner"></div>
+        <span>Generating insights from live segment data...</span>
+      </div>
+
+      <!-- Insights container -->
+      <div class="insight-grid" id="insights-container" style="display:none;">
+        <!-- Populated by JS -->
+      </div>
+
+    </main>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/insights.js"></script>
+</body>
+</html>

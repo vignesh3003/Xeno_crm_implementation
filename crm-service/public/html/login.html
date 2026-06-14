@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | Xeno CRM</title>
+  <meta name="description" content="Sign in to Xeno CRM — AI-Native Marketing Automation Platform.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <div class="auth-split-container">
+    
+    <!-- LEFT PANEL: Branding & Benefits -->
+    <div class="auth-left-panel">
+      <div class="logo">
+        <div class="logo-icon">✦</div>
+        <span>Xeno CRM</span>
+      </div>
+      
+      <div class="auth-marketing-content">
+        <h2>Marketing that understands your customers.</h2>
+        <ul class="auth-bullets">
+          <li>
+            <span class="bullet-icon">✓</span>
+            <div>
+              <strong>Instant AI Segmentation</strong>
+              <p style="font-size:0.875rem; color:#a1a1aa; margin-top:0.25rem;">Group your shoppers automatically based on real-time behavior and RFM traits.</p>
+            </div>
+          </li>
+          <li>
+            <span class="bullet-icon">✓</span>
+            <div>
+              <strong>Multichannel Campaign Flow</strong>
+              <p style="font-size:0.875rem; color:#a1a1aa; margin-top:0.25rem;">Deploy targeted messages on WhatsApp, Email, or SMS with a single click.</p>
+            </div>
+          </li>
+          <li>
+            <span class="bullet-icon">✓</span>
+            <div>
+              <strong>Executive Analytics</strong>
+              <p style="font-size:0.875rem; color:#a1a1aa; margin-top:0.25rem;">Visualize conversion probability, customer growth, and campaign ROI trends.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+      
+      <div class="auth-left-footer">
+        &copy; 2026 Xeno CRM Technologies Inc. All rights reserved.
+      </div>
+    </div>
+    
+    <!-- RIGHT PANEL: Login/Register Form -->
+    <div class="auth-right-panel">
+      <div class="auth-card">
+        
+        <h1 class="auth-heading" id="auth-heading">Welcome back</h1>
+        <p class="auth-sub" id="auth-sub">Sign in to your account to continue</p>
+
+        <!-- Error Alert -->
+        <div id="error-message" class="alert alert-danger" style="display:none;"></div>
+
+        <!-- Form Card -->
+        <div class="card" style="margin-top: 0;">
+          
+          <!-- LOGIN FORM -->
+          <form id="login-form">
+            <div class="form-group">
+              <label for="login-email">Email address</label>
+              <input type="email" id="login-email" class="form-control" placeholder="you@example.com" required autocomplete="email">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg" id="btn-login">Sign in</button>
+          </form>
+
+          <!-- REGISTER FORM (hidden by default) -->
+          <form id="register-form" style="display:none;">
+            <div class="form-group">
+              <label for="reg-name">Full name</label>
+              <input type="text" id="reg-name" class="form-control" placeholder="Arjun Sharma" required autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label for="reg-email">Email address</label>
+              <input type="email" id="reg-email" class="form-control" placeholder="you@example.com" required autocomplete="email">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label for="reg-password">Password</label>
+              <input type="password" id="reg-password" class="form-control" placeholder="••••••••" required autocomplete="new-password" minlength="6">
+            </div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg" id="btn-register">Create account</button>
+          </form>
+
+        </div>
+
+        <!-- Form Mode Toggle -->
+        <div class="auth-toggle-row">
+          <span id="toggle-prompt">Don't have an account?</span>
+          <a href="#" id="toggle-link" onclick="toggleMode(event)">Register</a>
+        </div>
+
+        <!-- Collapsible Demo Credentials Dropdown -->
+        <div class="demo-hint" id="demo-hint-container">
+          <div class="demo-hint-toggle" onclick="toggleDemoHint()">Use Demo Account</div>
+          <div class="demo-hint-content" id="demo-hint-content" style="display:none;">
+            <strong>Marketer:</strong> <code>marketer@xeno.com</code> / <code>password123</code><br>
+            <strong style="margin-top:0.4rem;">Customer:</strong> <code>aarav.sharma.0@gmail.com</code> / <code>password123</code>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    // If already logged in, redirect to respective dashboard
+    const _token = localStorage.getItem('token');
+    const _user  = localStorage.getItem('user');
+    if (_token && _user) {
+      const u = JSON.parse(_user);
+      window.location.replace(u.role === 'marketer' ? '/marketer' : '/customer');
+    }
+
+    let isLoginMode = true;
+
+    function toggleMode(e) {
+      e.preventDefault();
+      isLoginMode = !isLoginMode;
+
+      const loginForm    = document.getElementById('login-form');
+      const regForm      = document.getElementById('register-form');
+      const heading      = document.getElementById('auth-heading');
+      const sub          = document.getElementById('auth-sub');
+      const togglePrompt = document.getElementById('toggle-prompt');
+      const toggleLink   = document.getElementById('toggle-link');
+
+      document.getElementById('error-message').style.display = 'none';
+
+      if (isLoginMode) {
+        loginForm.style.display = 'block';
+        regForm.style.display   = 'none';
+        heading.textContent     = 'Welcome back';
+        sub.textContent         = 'Sign in to your account to continue';
+        togglePrompt.textContent = "Don't have an account?";
+        toggleLink.textContent  = 'Register';
+      } else {
+        loginForm.style.display = 'none';
+        regForm.style.display   = 'block';
+        heading.textContent     = 'Create account';
+        sub.textContent         = 'Start using Xeno CRM today';
+        togglePrompt.textContent = 'Already have an account?';
+        toggleLink.textContent  = 'Sign in';
+      }
+    }
+
+    // Toggle Collapsible Demo Hint
+    function toggleDemoHint() {
+      const container = document.getElementById('demo-hint-container');
+      const content = document.getElementById('demo-hint-content');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        container.classList.add('expanded');
+      } else {
+        content.style.display = 'none';
+        container.classList.remove('expanded');
+      }
+    }
+
+    // Determine role from email domain
+    function inferRole(email, serverRole) {
+      if (serverRole) return serverRole;
+      const lower = email.toLowerCase();
+      // Route @xeno.com or any address marked/recognized as marketer
+      if (lower.includes('@xeno.com') || lower.includes('@xeno.ai') || lower.endsWith('.ai')) {
+        return 'marketer';
+      }
+      return 'customer';
+    }
+
+    // LOGIN FORM SUBMIT
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email    = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errEl    = document.getElementById('error-message');
+      const btn      = document.getElementById('btn-login');
+
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+
+      try {
+        const res  = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || 'Login failed');
+
+        const role = inferRole(email, data.role);
+        setAuthData(data.token, { name: data.name, email: data.email, role });
+
+        window.location.replace(role === 'marketer' ? '/marketer' : '/customer');
+
+      } catch (err) {
+        errEl.textContent   = err.message;
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign in';
+      }
+    });
+
+    // REGISTER FORM SUBMIT
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name     = document.getElementById('reg-name').value.trim();
+      const email    = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const errEl    = document.getElementById('error-message');
+      const btn      = document.getElementById('btn-register');
+
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+
+      try {
+        const res  = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || 'Registration failed');
+
+        const role = inferRole(email, data.role);
+        setAuthData(data.token, { name: data.name, email: data.email, role });
+
+        window.location.replace(role === 'marketer' ? '/marketer' : '/customer');
+
+      } catch (err) {
+        errEl.textContent   = err.message;
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create account';
+      }
+    });
+  </script>
+</body>
+</html>

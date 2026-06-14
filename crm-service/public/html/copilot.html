@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Assistant | Xeno CRM</title>
+  <meta name="description" content="Chat with your AI marketing assistant for strategy and campaign ideas.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- ── SIDEBAR ── -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">✦</div>
+        <span>Xeno CRM</span>
+      </div>
+
+      <ul class="sidebar-menu">
+        <div class="sidebar-section-label">Overview</div>
+        <li>
+          <a href="/marketer">
+            <span class="nav-icon">⊞</span> Dashboard
+          </a>
+        </li>
+        
+        <div class="sidebar-section-label">Management</div>
+        <li>
+          <a href="/campaigns">
+            <span class="nav-icon">◎</span> Campaigns
+          </a>
+        </li>
+        
+        <div class="sidebar-section-label">Analytics & AI</div>
+        <li>
+          <a href="/analytics">
+            <span class="nav-icon">△</span> Analytics
+          </a>
+        </li>
+        <li class="active">
+          <a href="/copilot">
+            <span class="nav-icon">◇</span> AI Assistant
+          </a>
+        </li>
+
+        <div class="sidebar-section-label">System</div>
+        <li>
+          <a href="/settings">
+            <span class="nav-icon">⚙</span> Settings
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-badge">
+          <div class="user-avatar" id="sidebar-user-avatar">M</div>
+          <div class="user-details">
+            <span class="user-name" id="sidebar-user-name">Loading...</span>
+            <span class="user-role" id="sidebar-user-role">Marketer</span>
+          </div>
+        </div>
+        <a href="#" class="btn btn-secondary btn-full btn-sm" id="btn-logout">Sign out</a>
+      </div>
+    </nav>
+
+    <!-- ── MAIN CONTENT ── -->
+    <main class="main-content" style="display:flex; flex-direction:column;">
+
+      <div class="content-header" style="margin-bottom:1.5rem;">
+        <div class="header-title">
+          <h1>AI Assistant</h1>
+          <p>Converse with Xeno AI to discover observations, segments insight, and campaign drafts</p>
+        </div>
+      </div>
+
+      <!-- Centered Chat Container -->
+      <div class="copilot-wrapper">
+
+        <!-- Messages Area -->
+        <div class="chat-messages" id="chat-messages-box">
+          
+          <!-- Welcome Message -->
+          <div class="message-row">
+            <div class="message-avatar ai-avatar">✦</div>
+            <div class="message-content">
+              <div class="message-bubble ai">
+                Hello! I am your <strong>Xeno AI Assistant</strong>. I am plugged into your live customer databases, behavior charts, and segment trackers.<br><br>
+                Ask me about customer traits, or select one of the suggested strategies below to get started.
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Typing Indicator (hidden by default) -->
+        <div id="copilot-typing" style="display:none; padding:0.5rem 1.5rem; background: var(--bg-base);">
+          <div class="typing-indicator" style="margin-left: 40px;">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+
+        <!-- Suggested Prompt Pills -->
+        <div class="chat-suggestions-container" id="chat-suggestions-box">
+          <div class="suggestion-pill" onclick="submitSuggestedPrompt(this)">Why are dormant customers increasing?</div>
+          <div class="suggestion-pill" onclick="submitSuggestedPrompt(this)">Draft an email campaign for high-value customers</div>
+          <div class="suggestion-pill" onclick="submitSuggestedPrompt(this)">How can I increase sales this week?</div>
+          <div class="suggestion-pill" onclick="submitSuggestedPrompt(this)">Give me marketing insights for our segments</div>
+        </div>
+
+        <!-- Input Bar Form -->
+        <form class="chat-input-bar" id="copilot-chat-form">
+          <input
+            type="text"
+            id="copilot-message-input"
+            class="form-control"
+            placeholder="Ask your AI Assistant..."
+            required
+            autocomplete="off"
+          >
+          <button type="submit" class="btn btn-primary" id="btn-send-copilot">Send</button>
+        </form>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/copilot.js"></script>
+</body>
+</html>

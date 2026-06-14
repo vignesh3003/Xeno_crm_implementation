@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xeno CRM | Marketing Automation Platform</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="redirect-wrapper">
+    <div class="spinner"></div>
+    <span>Redirecting...</span>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user  = localStorage.getItem('user');
+    if (token && user) {
+      const u = JSON.parse(user);
+      window.location.replace(u.role === 'marketer' ? '/marketer' : '/customer');
+    } else {
+      window.location.replace('/login');
+    }
+  </script>
+</body>
+</html>
