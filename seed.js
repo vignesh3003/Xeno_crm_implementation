@@ -60,7 +60,27 @@ function checkIfFestival(date) {
 
 async function seed() {
   console.log('Connecting to database...');
-  await mongoose.connect(MONGODB_URI);
+  
+  let uri = MONGODB_URI;
+  if (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://')) {
+    try {
+      const { URL } = require('url');
+      const parsed = new URL(uri);
+      if (!parsed.pathname || parsed.pathname === '/') {
+        parsed.pathname = '/xeno_crm';
+      }
+      if (parsed.hostname.includes('rlwy.net') || parsed.hostname.includes('railway.internal')) {
+        if (!parsed.searchParams.has('authSource')) {
+          parsed.searchParams.set('authSource', 'admin');
+        }
+      }
+      uri = parsed.toString();
+    } catch (err) {
+      console.warn('Failed to parse MONGODB_URI URL in seed.js:', err.message);
+    }
+  }
+
+  await mongoose.connect(uri);
   console.log('Connected to MongoDB.');
 
   // Clear database
