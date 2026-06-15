@@ -53,6 +53,7 @@ const executeCampaign = async (campaign) => {
     console.log(`[CAMPAIGN STEP 2: RECIPIENTS SELECTED] Campaign: ${campaign._id} | Count: ${users.length}`);
 
     const channelServiceUrl = process.env.CHANNEL_SERVICE_URL || 'http://localhost:4000';
+    console.log(`[CAMPAIGN EXECUTION] Channel Service URL resolved to: ${channelServiceUrl}`);
 
     // 3. For each user, personalize message, create Communication record, and send to channel-service
     for (const user of users) {
@@ -94,7 +95,7 @@ const executeCampaign = async (campaign) => {
           console.log(`[CAMPAIGN EXECUTION] Channel service accepted message for ${user.email} (Communication ID: ${communication._id})`);
         })
         .catch(err => {
-          console.error(`[CAMPAIGN EXECUTION] Error sending to channel-service for ${user.email}:`, err.message);
+          console.error(`[CAMPAIGN EXECUTION] Error sending to channel-service for ${user.email} at URL ${channelServiceUrl}/send:`, err.message);
           // Update status to Failed
           Communication.findByIdAndUpdate(communication._id, {
             status: 'Failed',
