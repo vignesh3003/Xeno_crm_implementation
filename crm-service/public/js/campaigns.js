@@ -201,6 +201,7 @@ async function loadCampaignsHistory() {
       const openPct = pct(stats.opened);
       const clkPct  = pct(stats.clicked);
       const cnvPct  = pct(stats.converted);
+      const failPct = pct(stats.failed);
 
       let statusBadge = '';
       if (camp.status === 'Draft') {
@@ -209,14 +210,9 @@ async function loadCampaignsHistory() {
         let status = 'Mixed';
         let badgeClass = 'badge-warning';
         if (stats && stats.sent > 0) {
-          const cnvPct = (stats.converted / stats.sent) * 100;
-          const failPct = (stats.failed / stats.sent) * 100;
           if (cnvPct >= 15 && failPct < 10) {
             status = 'Success';
             badgeClass = 'badge-success';
-          } else if (cnvPct < 5 || failPct >= 20) {
-            status = 'Underperforming';
-            badgeClass = 'badge-danger';
           } else {
             status = 'Mixed';
             badgeClass = 'badge-warning';
@@ -348,7 +344,7 @@ window.viewExplanation = async (campaignId) => {
         <div>
           <span style="font-size:0.75rem; text-transform:uppercase; color:var(--text-3); font-weight:600; letter-spacing:0.05em;">Campaign Status</span>
           <div style="margin-top:0.25rem;">
-            <span class="badge ${report.status === 'Success' ? 'badge-success' : report.status === 'Underperforming' ? 'badge-danger' : 'badge-warning'}">${report.status || 'Mixed'}</span>
+            <span class="badge ${report.status === 'Success' ? 'badge-success' : 'badge-warning'}">${report.status || 'Mixed'}</span>
           </div>
         </div>
         <div>

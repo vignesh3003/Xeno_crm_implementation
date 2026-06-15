@@ -128,15 +128,13 @@ async function simulateBulkTelemetry(campaignId, channel) {
 
     console.log(`[INTERNAL SIMULATION] Starting telemetry generation for ${communications.length} records...`);
 
-    // 1. Choose a target campaign performance tier randomly
+    // 1. Choose a target campaign performance tier randomly (Success or Mixed only)
     const tierRoll = Math.random();
     let targetTier = 'Mixed'; // default
-    if (tierRoll < 0.35) {
+    if (tierRoll < 0.50) {
       targetTier = 'Success';
-    } else if (tierRoll < 0.70) {
-      targetTier = 'Mixed';
     } else {
-      targetTier = 'Underperforming';
+      targetTier = 'Mixed';
     }
 
     console.log(`[INTERNAL SIMULATION] Campaign ${campaignId} assigned target tier: ${targetTier}`);
@@ -154,19 +152,13 @@ async function simulateBulkTelemetry(campaignId, channel) {
       clickRate = 0.15;
       openRate = 0.35;
       deliveredRate = 0.30;
-    } else if (targetTier === 'Mixed') {
+    } else {
+      // Mixed
       failRate = 0.05;
       conversionRate = 0.08; // 5% - 15% conversion => Mixed
       clickRate = 0.12;
       openRate = 0.30;
       deliveredRate = 0.45;
-    } else {
-      // Underperforming
-      failRate = 0.12;
-      conversionRate = 0.02; // < 5% conversion => Underperforming
-      clickRate = 0.05;
-      openRate = 0.21;
-      deliveredRate = 0.60;
     }
 
     const products = await Product.find({});
