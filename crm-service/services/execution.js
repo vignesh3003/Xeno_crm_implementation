@@ -128,45 +128,63 @@ async function simulateBulkTelemetry(campaignId, channel) {
 
     console.log(`[INTERNAL SIMULATION] Starting telemetry generation for ${communications.length} records...`);
 
-    // Determine performance rates based on channel
-    let openRate = 0.6; // SMS
-    if (channel === 'WhatsApp') openRate = 0.85;
-    if (channel === 'Email') openRate = 0.5;
+    // 1. Choose a target campaign performance tier randomly
+    const tierRoll = Math.random();
+    let targetTier = 'Mixed'; // default
+    if (tierRoll < 0.35) {
+      targetTier = 'Success';
+    } else if (tierRoll < 0.70) {
+      targetTier = 'Mixed';
+    } else {
+      targetTier = 'Underperforming';
+    }
 
-    let clickRate = 0.2; // SMS
-    if (channel === 'WhatsApp') clickRate = 0.35;
-    if (channel === 'Email') clickRate = 0.15;
+    console.log(`[INTERNAL SIMULATION] Campaign ${campaignId} assigned target tier: ${targetTier}`);
 
-    let conversionRate = 0.08; // SMS
-    if (channel === 'WhatsApp') conversionRate = 0.15;
-    if (channel === 'Email') conversionRate = 0.05;
+    // 2. Define flat probabilities based on the target tier
+    let failRate = 0.05;
+    let conversionRate = 0.08;
+    let clickRate = 0.12;
+    let openRate = 0.30;
+    let deliveredRate = 0.45;
+
+    if (targetTier === 'Success') {
+      failRate = 0.02;
+      conversionRate = 0.18; // > 15% conversion => Success!
+      clickRate = 0.15;
+      openRate = 0.35;
+      deliveredRate = 0.30;
+    } else if (targetTier === 'Mixed') {
+      failRate = 0.05;
+      conversionRate = 0.08; // 5% - 15% conversion => Mixed
+      clickRate = 0.12;
+      openRate = 0.30;
+      deliveredRate = 0.45;
+    } else {
+      // Underperforming
+      failRate = 0.12;
+      conversionRate = 0.02; // < 5% conversion => Underperforming
+      clickRate = 0.05;
+      openRate = 0.21;
+      deliveredRate = 0.60;
+    }
 
     const products = await Product.find({});
 
     for (const comm of communications) {
       let finalStatus = 'Sent';
       const rand = Math.random();
-      const isFailed = rand < 0.05; // 5% failed
       
-      if (isFailed) {
+      if (rand < failRate) {
         finalStatus = 'Failed';
+      } else if (rand < failRate + conversionRate) {
+        finalStatus = 'Converted';
+      } else if (rand < failRate + conversionRate + clickRate) {
+        finalStatus = 'Clicked';
+      } else if (rand < failRate + conversionRate + clickRate + openRate) {
+        finalStatus = 'Opened';
       } else {
-        const randOpen = Math.random();
-        if (randOpen < openRate) {
-          const randClick = Math.random();
-          if (randClick < clickRate) {
-            const randConv = Math.random();
-            if (randConv < conversionRate) {
-              finalStatus = 'Converted';
-            } else {
-              finalStatus = 'Clicked';
-            }
-          } else {
-            finalStatus = 'Opened';
-          }
-        } else {
-          finalStatus = 'Delivered';
-        }
+        finalStatus = 'Delivered';
       }
 
       const updates = { status: finalStatus, updatedAt: new Date() };
