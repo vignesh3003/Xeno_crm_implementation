@@ -18,7 +18,7 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // @route   POST /send
 // @access  Public
 app.post('/send', async (req, res) => {
-  const { recipient, message, channel, communicationId } = req.body;
+  const { recipient, message, channel, communicationId, callbackUrl } = req.body;
 
   if (!recipient || !message || !channel || !communicationId) {
     return res.status(400).json({ message: 'Missing recipient, message, channel, or communicationId' });
@@ -28,22 +28,22 @@ app.post('/send', async (req, res) => {
   res.json({ success: true, message: 'Message queued for simulation' });
 
   // Run the simulation asynchronously
-  simulateInteraction(communicationId, channel, recipient);
+  simulateInteraction(communicationId, channel, recipient, callbackUrl);
 });
 
 // Simulated behavior
-async function simulateInteraction(communicationId, channel, recipient) {
+async function simulateInteraction(communicationId, channel, recipient, callbackUrl) {
   try {
     // 1. Initial State: Sent is already recorded. We wait 1 second to transition to Delivered or Failed.
     await delay(1000);
     
     const isFailed = Math.random() < 0.08; // 8% chance of failure
     if (isFailed) {
-      await sendCallback(communicationId, 'Failed');
+      await sendCallback(communicationId, 'Failed', callbackUrl);
       return;
     }
 
-    await sendCallback(communicationId, 'Delivered');
+    await sendCallback(communicationId, 'Delivered', callbackUrl);
 
     // 2. Opened: channel specific rates
     // WhatsApp has higher open rates than email/sms
@@ -55,7 +55,7 @@ async function simulateInteraction(communicationId, channel, recipient) {
     const isOpened = Math.random() < openRate;
     if (!isOpened) return; // Stays at Delivered
 
-    await sendCallback(communicationId, 'Opened');
+    await sendCallback(communicationId, 'Opened', callbackUrl);
 
     // 3. Clicked: Click rates
     let clickRate = 0.2; // SMS
@@ -66,7 +66,7 @@ async function simulateInteraction(communicationId, channel, recipient) {
     const isClicked = Math.random() < clickRate;
     if (!isClicked) return; // Stays at Opened
 
-    await sendCallback(communicationId, 'Clicked');
+    await sendCallback(communicationId, 'Clicked', callbackUrl);
 
     // 4. Converted: Purchase rates
     let conversionRate = 0.08; // SMS
@@ -77,19 +77,20 @@ async function simulateInteraction(communicationId, channel, recipient) {
     const isConverted = Math.random() < conversionRate;
     if (!isConverted) return; // Stays at Clicked
 
-    await sendCallback(communicationId, 'Converted');
+    await sendCallback(communicationId, 'Converted', callbackUrl);
 
   } catch (error) {
     console.error(`Simulation failed for communicationId ${communicationId}:`, error.message);
   }
 }
 
-async function sendCallback(communicationId, status) {
+async function sendCallback(communicationId, status, callbackUrl) {
   const maxAttempts = 3;
   
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      await axios.post(CRM_CALLBACK_URL, {
+      const targetUrl = callbackUrl || CRM_CALLBACK_URL;
+      await axios.post(targetUrl, {
         communicationId,
         status
       });

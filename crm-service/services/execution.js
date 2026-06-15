@@ -35,9 +35,9 @@ const renderTemplate = async (template, customer) => {
   return msg;
 };
 
-const executeCampaign = async (campaign) => {
+const executeCampaign = async (campaign, baseUrl) => {
   try {
-    console.log(`[CAMPAIGN EXECUTION START] Campaign ID: ${campaign._id} | Name: ${campaign.name}`);
+    console.log(`[CAMPAIGN EXECUTION START] Campaign ID: ${campaign._id} | Name: ${campaign.name} | Base URL: ${baseUrl}`);
 
     // 1. Fetch Segment
     const segment = await Segment.findOne({ name: campaign.targetSegment });
@@ -84,10 +84,11 @@ const executeCampaign = async (campaign) => {
         recipient: user.email,
         message: personalizedMessage,
         channel: campaign.channel,
-        communicationId: communication._id // Include communicationId for tracking callbacks
+        communicationId: communication._id, // Include communicationId for tracking callbacks
+        callbackUrl: baseUrl ? `${baseUrl}/api/receipt` : undefined
       };
 
-      console.log(`[CAMPAIGN STEP 4: CHANNEL SERVICE CALLED] Sending to ${channelServiceUrl}/send for User: ${user.email} | Comm ID: ${communication._id}`);
+      console.log(`[CAMPAIGN STEP 4: CHANNEL SERVICE CALLED] Sending to ${channelServiceUrl}/send for User: ${user.email} | Comm ID: ${communication._id} | Callback URL: ${payload.callbackUrl}`);
 
       // Call channel-service asynchronously (don't block the loop on response, but let it execute)
       axios.post(`${channelServiceUrl}/send`, payload)

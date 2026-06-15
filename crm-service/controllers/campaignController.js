@@ -52,7 +52,8 @@ const runCampaign = async (req, res) => {
     campaign.status = 'Sent';
     await campaign.save();
 
-    executeCampaign(campaign);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    executeCampaign(campaign, baseUrl);
 
     res.json({ success: true, data: { message: 'Campaign execution started', campaign } });
   } catch (error) {
