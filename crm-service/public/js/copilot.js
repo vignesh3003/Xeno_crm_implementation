@@ -48,16 +48,12 @@ window.submitSuggestedPrompt = (pillEl) => {
   const inputEl = document.getElementById('copilot-message-input');
   if (inputEl) {
     inputEl.value = promptText;
-    // Dispatch submit event to form
-    const form = document.getElementById('copilot-chat-form');
-    if (form) {
-      form.dispatchEvent(new Event('submit'));
-    }
+    handleSendMessage();
   }
 };
 
 async function handleSendMessage(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
 
   const inputEl = document.getElementById('copilot-message-input');
   const message = inputEl.value.trim();
