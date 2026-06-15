@@ -11,24 +11,24 @@ const protect = async (req, res, next) => {
 
       req.user = await User.findById(decoded.id).select('-password');
       if (!req.user) {
-        return res.status(401).json({ message: 'Not authorized, user not found' });
+        return res.status(401).json({ success: false, message: 'Not authorized, user not found' });
       }
       return next();
     } catch (error) {
       console.error(error);
-      return res.status(401).json({ message: 'Not authorized, token failed' });
+      return res.status(401).json({ success: false, message: 'Not authorized, token failed' });
     }
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ success: false, message: 'Not authorized, no token' });
   }
 };
 
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: `Role ${req.user ? req.user.role : 'none'} is not authorized to access this resource` });
+      return res.status(403).json({ success: false, message: `Role ${req.user ? req.user.role : 'none'} is not authorized to access this resource` });
     }
     next();
   };

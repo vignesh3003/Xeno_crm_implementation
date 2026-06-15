@@ -56,7 +56,6 @@ app.use('/api/segments', require('./routes/segment'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/campaigns', require('./routes/campaign'));
 app.use('/api/analytics', require('./routes/analytics'));
-app.use('/api/todos', require('./routes/todo'));
 
 // Direct Route Aliases for Stabilization
 const { getPreferences, updatePreferences, loginUser } = require('./controllers/authController');

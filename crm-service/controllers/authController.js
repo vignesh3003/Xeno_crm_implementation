@@ -17,16 +17,10 @@ const registerUser = async (req, res) => {
     const userExists = await User.findOne({ email });
 
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+      return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
 
-    const emailLower = email.toLowerCase();
-    const assignedRole = emailLower.endsWith('@xeno.com') ? 'marketer' : 'customer';
-
-    // Reject invalid role request
-    if (req.body.role && req.body.role !== assignedRole) {
-      return res.status(400).json({ message: 'Invalid role assignment for this email domain.' });
-    }
+    const assignedRole = email === 'marketer@xeno.com' ? 'marketer' : 'customer';
 
     const user = await User.create({
       name,
@@ -36,18 +30,25 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+      // Refresh segments to place the new customer in the 'New Shoppers' segment immediately
+      const { refreshSegments } = require('../services/segmentation');
+      await refreshSegments().catch(err => console.error('Registration segment refresh failed:', err));
+
       res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id, user.role)
+        success: true,
+        data: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          token: generateToken(user._id, user.role)
+        }
       });
     } else {
-      res.status(400).json({ message: 'Invalid user data' });
+      res.status(400).json({ success: false, message: 'Invalid user data' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -64,7 +65,7 @@ const loginUser = async (req, res) => {
     if (!user) {
       console.log(`User found: NO`);
       console.log(`Login failure reason: User not found\n`);
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
     console.log(`User found: YES`);
@@ -101,19 +102,22 @@ const loginUser = async (req, res) => {
       }
 
       res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id, user.role)
+        success: true,
+        data: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          token: generateToken(user._id, user.role)
+        }
       });
     } else {
       console.log(`Login failure reason: Password mismatch\n`);
-      res.status(401).json({ message: 'Invalid email or password' });
+      res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
   } catch (error) {
     console.log(`Login failure reason: Server error - ${error.message}\n`);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -128,7 +132,7 @@ const getPreferences = async (req, res) => {
     }
     const defaultPrefs = {
       widgets: [
-        { id: 'today-tasks', visible: true, order: 0 },
+        { id: 'campaign-summary', visible: true, order: 0 },
         { id: 'kpis', visible: true, order: 1 },
         { id: 'recent-activity', visible: true, order: 2 },
         { id: 'quick-actions', visible: true, order: 3 },

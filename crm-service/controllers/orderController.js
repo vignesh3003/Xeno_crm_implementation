@@ -73,6 +73,21 @@ const createOrder = async (req, res) => {
     cart.abandoned = false;
     await cart.save();
 
+    // Mark the most recent active campaign communication as Converted
+    const Communication = require('../models/Communication');
+    const activeComm = await Communication.findOne({
+      userId: req.user._id,
+      status: { $in: ['Sent', 'Delivered', 'Opened', 'Clicked'] }
+    }).sort({ sentAt: -1 });
+
+    if (activeComm) {
+      activeComm.status = 'Converted';
+      activeComm.convertedAt = new Date();
+      activeComm.updatedAt = new Date();
+      await activeComm.save();
+      console.log(`[CAMPAIGN CONVERSION] Marked communication ${activeComm._id} as Converted for user ${req.user._id}`);
+    }
+
     // Spawn segment refresh in background
     refreshSegments();
 

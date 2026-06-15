@@ -331,7 +331,7 @@ window.viewExplanation = async (campaignId) => {
 
   try {
     const response = await apiCall(`/campaigns/${campaignId}/explanation`);
-    const report = response.data || {};
+    const report = response || {};
     
     let recsHtml = '';
     if (report.recommendations && report.recommendations.length > 0) {

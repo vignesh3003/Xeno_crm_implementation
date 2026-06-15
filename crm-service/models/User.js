@@ -29,7 +29,7 @@ const UserSchema = new mongoose.Schema({
     type: Object,
     default: {
       widgets: [
-        { id: 'today-tasks', visible: true, order: 0 },
+        { id: 'campaign-summary', visible: true, order: 0 },
         { id: 'kpis', visible: true, order: 1 },
         { id: 'recent-activity', visible: true, order: 2 },
         { id: 'quick-actions', visible: true, order: 3 },

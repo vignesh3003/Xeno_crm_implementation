@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Initialize Floating Chatbot
   initFloatingChatbot();
 
-  // 3. Initialize Todo Forms
-  initTodoForm();
+  // 3. Initialize Campaign Summary
+  loadCampaignSummary();
 
   // 4. Initialize Timeframe Selectors
   initTimeframeFilter();
@@ -96,7 +96,7 @@ async function loadDashboardData() {
     const container = document.getElementById('widgets-container');
     if (container) {
       const prefs = widgetPrefs?.widgets || [
-        { id: 'today-tasks', visible: true, order: 0 },
+        { id: 'campaign-summary', visible: true, order: 0 },
         { id: 'kpis', visible: true, order: 1 },
         { id: 'recent-activity', visible: true, order: 2 },
         { id: 'quick-actions', visible: true, order: 3 },
@@ -118,45 +118,45 @@ async function loadDashboardData() {
         }
       });
 
-      // Special handling for side-by-side tasks and activity wrapper
-      const tasksPref = prefs.find(w => w.id === 'today-tasks');
+      // Special handling for side-by-side campaign summary and activity wrapper
+      const summaryPref = prefs.find(w => w.id === 'campaign-summary');
       const activityPref = prefs.find(w => w.id === 'recent-activity');
       const wrapper = document.getElementById('widget-tasks-activity');
       if (wrapper) {
-        const bothHidden = (!tasksPref || !tasksPref.visible) && (!activityPref || !activityPref.visible);
+        const bothHidden = (!summaryPref || !summaryPref.visible) && (!activityPref || !activityPref.visible);
         wrapper.style.display = bothHidden ? 'none' : 'grid';
 
-        if (tasksPref?.visible && activityPref?.visible) {
+        if (summaryPref?.visible && activityPref?.visible) {
           wrapper.style.gridTemplateColumns = '1.2fr 1fr';
         } else {
           wrapper.style.gridTemplateColumns = '1fr';
         }
 
-        const tasksOrder = tasksPref ? tasksPref.order : 0;
+        const summaryOrder = summaryPref ? summaryPref.order : 0;
         const activityOrder = activityPref ? activityPref.order : 2;
-        wrapper.dataset.order = Math.min(tasksOrder, activityOrder);
+        wrapper.dataset.order = Math.min(summaryOrder, activityOrder);
       }
 
       // Sort widgets by order
       const elementsToOrder = Array.from(container.children);
       elementsToOrder.forEach(el => {
-        if (el.id === 'widget-today-tasks' || el.id === 'widget-recent-activity') return;
+        if (el.id === 'widget-campaign-summary' || el.id === 'widget-recent-activity') return;
 
         let order = 99;
         const pref = prefs.find(w => `widget-${w.id}` === el.id);
         if (pref) {
           order = pref.order;
         } else if (el.id === 'widget-tasks-activity') {
-          order = parseFloat(el.dataset.order) || 0;
+          order = (parseFloat(el.dataset.order) || 0) + 2; // Offset to render below KPIs and Performance Analytics
         } else if (el.id === 'widget-analytics') {
-          order = 0.5; // Statically under KPIs
+          order = 1.5; // Statically between KPIs and Tasks/Activity split widget
         }
         el.dataset.order = order;
       });
 
       elementsToOrder.sort((a, b) => parseFloat(a.dataset.order) - parseFloat(b.dataset.order));
       elementsToOrder.forEach(el => {
-        if (el.id !== 'widget-today-tasks' && el.id !== 'widget-recent-activity') {
+        if (el.id !== 'widget-campaign-summary' && el.id !== 'widget-recent-activity') {
           container.appendChild(el);
         }
       });
@@ -172,9 +172,9 @@ async function loadDashboardData() {
     renderRevenueChart(data.charts.revenueTrend);
     renderCampaignChart(data.charts.campaignPerformance);
 
-    // Render Recent Activity Stream & Todos
+    // Render Recent Activity Stream & Campaign Summary
     loadActivityStream();
-    loadTodos();
+    loadCampaignSummary();
 
   } catch (err) {
     console.error('Failed to load dashboard:', err);
@@ -303,96 +303,30 @@ function initTimeframeFilter() {
 }
 
 // ─────────────────────────────────────────
-// TODOS WORKFLOW (MongoDB Sync)
-// ─────────────────────────────────────────
-async function loadTodos() {
-  const container = document.getElementById('todo-list-container');
+// CAMPAIGN SUMMARY LISTING
+async function loadCampaignSummary() {
+  const container = document.getElementById('campaign-summary-list');
   if (!container) return;
 
   try {
-    const todos = await apiCall('/todos');
-    
-    if (todos.length === 0) {
-      container.innerHTML = `<li style="color:var(--text-3); font-size:0.875rem; text-align:center; padding:1rem;">All caught up! No tasks for today.</li>`;
+    const campaigns = await apiCall('/campaigns');
+    if (campaigns.length === 0) {
+      container.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1.5rem 0; color:var(--text-3);">No campaigns created yet. Launch one to begin!</td></tr>`;
       return;
     }
-
-    container.innerHTML = todos.map(todo => {
-      const aiBadge = todo.aiGenerated 
-        ? `<span style="font-size:0.65rem; background:rgba(79,70,229,0.1); color:var(--accent); padding:0.15rem 0.35rem; border-radius:4px; font-weight:600; margin-left:0.5rem;">AI</span>`
-        : '';
-      
-      return `
-        <li class="todo-item ${todo.completed ? 'completed' : ''}" id="todo-item-${todo._id}">
-          <input type="checkbox" id="chk-${todo._id}" ${todo.completed ? 'checked' : ''} onchange="toggleTodo('${todo._id}', this.checked)">
-          <label for="chk-${todo._id}" style="flex-grow:1; cursor:pointer;">${todo.title} ${aiBadge}</label>
-          <a href="#" onclick="deleteTodo(event, '${todo._id}')" style="font-size: 0.75rem; color: var(--danger); margin-left: 0.5rem;" title="Delete task">Delete</a>
-        </li>
-      `;
-    }).join('');
+    // Limit to 5 most recent campaigns
+    const recentCampaigns = campaigns.slice(0, 5);
+    container.innerHTML = recentCampaigns.map(c => `
+      <tr>
+        <td style="color: var(--text-1); font-weight: 500;">${c.name}</td>
+        <td>${c.channel}</td>
+        <td><span class="badge ${c.status === 'Sent' ? 'badge-success' : 'badge-warning'}">${c.status}</span></td>
+      </tr>
+    `).join('');
   } catch (err) {
-    console.error('Failed to load todos:', err);
+    console.error('Failed to load campaign summary:', err);
+    container.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1.5rem 0; color:var(--text-3);">Error loading campaign summary.</td></tr>`;
   }
-}
-
-window.toggleTodo = async (id, completed) => {
-  const item = document.getElementById(`todo-item-${id}`);
-  if (item) {
-    if (completed) {
-      item.classList.add('completed');
-    } else {
-      item.classList.remove('completed');
-    }
-  }
-
-  try {
-    await apiCall(`/todos/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ completed })
-    });
-  } catch (err) {
-    console.error('Failed to update todo:', err);
-    loadTodos();
-  }
-};
-
-window.deleteTodo = async (e, id) => {
-  e.preventDefault();
-  if (!confirm("Are you sure you want to delete this task?")) return;
-
-  try {
-    await apiCall(`/todos/${id}`, {
-      method: 'DELETE'
-    });
-    loadTodos();
-  } catch (err) {
-    console.error('Failed to delete todo:', err);
-  }
-};
-
-function initTodoForm() {
-  const form = document.getElementById('todo-add-form');
-  const input = document.getElementById('todo-add-input');
-  
-  if (!form || !input) return;
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const title = input.value.trim();
-    if (!title) return;
-
-    input.value = '';
-
-    try {
-      await apiCall('/todos', {
-        method: 'POST',
-        body: JSON.stringify({ title })
-      });
-      loadTodos();
-    } catch (err) {
-      console.error('Failed to add todo:', err);
-    }
-  });
 }
 
 // ─────────────────────────────────────────
@@ -404,12 +338,12 @@ async function loadActivityStream() {
 
   try {
     const res = await apiCall('/analytics/activity');
-    const events = res.data || [];
+    const events = Array.isArray(res) ? res : (res.data || []);
 
     if (events.length === 0) {
       timelineEl.innerHTML = `
         <div style="text-align:center; padding:1.5rem 0; color:var(--text-3); font-size:0.875rem;">
-          No recent activity logs.
+          No campaign activity yet.<br><br>Launch your first campaign to begin tracking audience engagement and performance.
         </div>`;
       return;
     }
@@ -418,18 +352,24 @@ async function loadActivityStream() {
       let icon = '✉';
       let badgeStyle = 'background:rgba(79,70,229,0.08); color:var(--accent)';
 
-      if (ev.type === 'delivery_failed') {
-        icon = '⚠';
-        badgeStyle = 'background:rgba(239,68,68,0.08); color:var(--danger)';
-      } else if (ev.type === 'campaign_opened') {
-        icon = '👁';
+      if (ev.type === 'campaign_created') {
+        icon = '➕';
+        badgeStyle = 'background:rgba(16,185,129,0.08); color:var(--success)';
+      } else if (ev.type === 'audience_segmented') {
+        icon = '👥';
         badgeStyle = 'background:rgba(59,130,246,0.08); color:var(--info)';
-      } else if (ev.type === 'customer_signup') {
-        icon = '👤';
-        badgeStyle = 'background:rgba(16,185,129,0.08); color:var(--success)';
-      } else if (ev.type === 'order_purchase') {
-        icon = '🛍';
-        badgeStyle = 'background:rgba(16,185,129,0.08); color:var(--success)';
+      } else if (ev.type === 'messages_dispatched') {
+        icon = '🚀';
+        badgeStyle = 'background:rgba(245,158,11,0.08); color:var(--warning)';
+      } else if (ev.type === 'opens_recorded') {
+        icon = '👁';
+        badgeStyle = 'background:rgba(99,102,241,0.08); color:var(--accent)';
+      } else if (ev.type === 'clicks_recorded') {
+        icon = '🖱';
+        badgeStyle = 'background:rgba(236,72,153,0.08); color:var(--danger)';
+      } else if (ev.type === 'brand_memory_updated') {
+        icon = '🧠';
+        badgeStyle = 'background:rgba(139,92,246,0.08); color:var(--accent)';
       }
 
       const dateStr = formatActivityTime(ev.timestamp);

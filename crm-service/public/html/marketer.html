@@ -6,7 +6,7 @@
   <title>Dashboard | Xeno CRM</title>
   <meta name="description" content="Marketer dashboard — overview of your CRM performance.">
   <link rel="stylesheet" href="/css/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/chart.js"></script>
   <style>
     /* Compact layout adjustments to preserve design visually */
     .dashboard-layout-grid {
@@ -260,26 +260,34 @@
         <!-- 3. SPLIT ROW WIDGETS (TODAYS TASKS + RECENT ACTIVITY) -->
         <div id="widget-tasks-activity" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; width: 100%;">
           
-          <!-- Today's Tasks -->
-          <div id="widget-today-tasks" class="card" style="margin: 0;">
-            <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--text-1);">Today's Tasks</h3>
-            
-            <!-- Add task input -->
-            <form id="todo-add-form" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem;">
-              <input type="text" id="todo-add-input" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;" placeholder="Add new task..." required autocomplete="off">
-              <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">Add</button>
-            </form>
-
-            <ul class="todo-list" id="todo-list-container">
-              <li style="color:var(--text-3); font-size:0.875rem; text-align:center; padding:1rem;">Loading tasks...</li>
-            </ul>
+          <!-- Campaign Summary -->
+          <div id="widget-campaign-summary" class="card" style="margin: 0; max-height: 420px; display: flex; flex-direction: column; overflow: hidden;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem; color: var(--text-1);">Campaign Summary</h3>
+            <div class="table-container" style="margin-top: 0.5rem; overflow-y: auto; flex-grow: 1; min-height: 0; max-height: 320px;">
+              <table class="table" style="font-size: 0.85rem;">
+                <thead>
+                  <tr>
+                    <th>Campaign Name</th>
+                    <th>Channel</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="campaign-summary-list">
+                  <tr>
+                    <td colspan="3" style="text-align:center; padding:1.5rem 0; color:var(--text-3);">Loading campaigns...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <!-- Recent Activity -->
-          <div id="widget-recent-activity" class="card" style="margin: 0;">
+          <div id="widget-recent-activity" class="card" style="margin: 0; max-height: 420px; display: flex; flex-direction: column; overflow: hidden;">
             <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem; color: var(--text-1);">Recent Activity</h3>
-            <div class="timeline" id="dashboard-timeline">
-              <p style="font-size:0.875rem; color:var(--text-3); text-align:center; padding:1.5rem 0;">Loading activity timeline...</p>
+            <div style="overflow-y: auto; flex-grow: 1; padding-right: 0.5rem; min-height: 0; max-height: 320px;">
+              <div class="timeline" id="dashboard-timeline" style="margin-top: 0.5rem;">
+                <p style="font-size:0.875rem; color:var(--text-3); text-align:center; padding:1.5rem 0;">Loading activity timeline...</p>
+              </div>
             </div>
           </div>
 

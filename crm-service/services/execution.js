@@ -4,6 +4,37 @@ const Segment = require('../models/Segment');
 const Communication = require('../models/Communication');
 const Order = require('../models/Order');
 
+const renderTemplate = async (template, customer) => {
+  if (!template) return '';
+  const lastOrder = await Order.findOne({ userId: customer._id }).sort({ purchaseDate: -1 });
+  const userOrders = await Order.find({ userId: customer._id });
+  const totalSpent = userOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+
+  const formattedLastOrder = lastOrder
+    ? new Date(lastOrder.purchaseDate).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric'
+      })
+    : 'no orders yet';
+
+  const spentStr = `₹${(totalSpent || 0).toLocaleString('en-IN')}`;
+
+  const replacements = {
+    name: customer.name || 'Customer',
+    email: customer.email || '',
+    city: customer.city || 'your city',
+    last_order: formattedLastOrder,
+    total_spent: spentStr
+  };
+
+  let msg = template;
+  for (const [key, val] of Object.entries(replacements)) {
+    const regex1 = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'gi');
+    const regex2 = new RegExp(`\\{\\s*${key}\\s*\\}`, 'gi');
+    msg = msg.replace(regex1, val).replace(regex2, val);
+  }
+  return msg;
+};
+
 const executeCampaign = async (campaign) => {
   try {
     console.log(`[CAMPAIGN EXECUTION START] Campaign ID: ${campaign._id} | Name: ${campaign.name}`);
@@ -19,42 +50,15 @@ const executeCampaign = async (campaign) => {
 
     // 2. Fetch Users in the segment
     const users = await User.find({ _id: { $in: segment.userIds } });
-    console.log(`[CAMPAIGN EXECUTION] Selected ${users.length} active recipient users from database.`);
+    console.log(`[CAMPAIGN STEP 2: RECIPIENTS SELECTED] Campaign: ${campaign._id} | Count: ${users.length}`);
 
     const channelServiceUrl = process.env.CHANNEL_SERVICE_URL || 'http://localhost:4000';
 
     // 3. For each user, personalize message, create Communication record, and send to channel-service
     for (const user of users) {
-      // Get personalization data for this user
-      const lastOrder = await Order.findOne({ userId: user._id }).sort({ purchaseDate: -1 });
-      const userOrders = await Order.find({ userId: user._id });
-      const totalSpent = userOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+      const personalizedMessage = await renderTemplate(campaign.messageTemplate, user);
 
-      const formattedLastOrder = lastOrder
-        ? new Date(lastOrder.purchaseDate).toLocaleDateString('en-US', {
-            year: 'numeric', month: 'short', day: 'numeric'
-          })
-        : 'no orders yet';
-
-      const spentStr = `₹${(totalSpent || 0).toLocaleString('en-IN')}`;
-
-      let personalizedMessage = campaign.messageTemplate || '';
-      
-      const replacements = {
-        name: user.name || 'Customer',
-        email: user.email || '',
-        city: user.city || 'your city',
-        last_order: formattedLastOrder || 'no orders yet',
-        total_spent: spentStr || '₹0'
-      };
-
-      for (const [key, val] of Object.entries(replacements)) {
-        const regex1 = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'gi');
-        const regex2 = new RegExp(`\\{\\s*${key}\\s*\\}`, 'gi');
-        personalizedMessage = personalizedMessage.replace(regex1, val).replace(regex2, val);
-      }
-
-      console.log(`[CAMPAIGN EXECUTION] Personalizing message for user: ${user.email}`);
+      console.log(`[CAMPAIGN STEP 3: MESSAGE PERSONALIZED] User: ${user.email} | Message: "${personalizedMessage.substring(0, 50)}..."`);
 
       // Create communication record
       const communication = await Communication.create({
@@ -82,7 +86,7 @@ const executeCampaign = async (campaign) => {
         communicationId: communication._id // Include communicationId for tracking callbacks
       };
 
-      console.log(`[CAMPAIGN EXECUTION] Calling channel service at ${channelServiceUrl}/send for ${user.email}`);
+      console.log(`[CAMPAIGN STEP 4: CHANNEL SERVICE CALLED] Sending to ${channelServiceUrl}/send for User: ${user.email} | Comm ID: ${communication._id}`);
 
       // Call channel-service asynchronously (don't block the loop on response, but let it execute)
       axios.post(`${channelServiceUrl}/send`, payload)

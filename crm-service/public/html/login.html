@@ -105,8 +105,7 @@
         <div class="demo-hint" id="demo-hint-container">
           <div class="demo-hint-toggle" onclick="toggleDemoHint()">Use Demo Account</div>
           <div class="demo-hint-content" id="demo-hint-content" style="display:none;">
-            <strong>Marketer:</strong> <code>marketer@xeno.com</code> / <code>password123</code><br>
-            <strong style="margin-top:0.4rem;">Customer:</strong> <code>aarav.sharma.0@gmail.com</code> / <code>password123</code>
+            <strong>Marketer:</strong> <code>marketer@xeno.com</code> / <code>password123</code>
           </div>
         </div>
 
@@ -172,13 +171,7 @@
 
     // Determine role from email domain
     function inferRole(email, serverRole) {
-      if (serverRole) return serverRole;
-      const lower = email.toLowerCase();
-      // Route @xeno.com or any address marked/recognized as marketer
-      if (lower.includes('@xeno.com') || lower.includes('@xeno.ai') || lower.endsWith('.ai')) {
-        return 'marketer';
-      }
-      return 'customer';
+      return email === 'marketer@xeno.com' ? 'marketer' : 'customer';
     }
 
     // LOGIN FORM SUBMIT
@@ -199,14 +192,23 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error("Invalid JSON:", text);
+          throw new Error('Invalid JSON response from server');
+        }
 
         if (!res.ok) throw new Error(data.message || 'Login failed');
 
-        const role = inferRole(email, data.role);
-        setAuthData(data.token, { name: data.name, email: data.email, role });
+        const payload = data.data;
+        const role = inferRole(email, payload.role);
+        setAuthData(payload.token, { name: payload.name, email: payload.email, role });
 
-        window.location.replace(role === 'marketer' ? '/marketer' : '/customer');
+        const destination = role === 'marketer' ? '/marketer' : '/customer';
+        window.location.replace(destination);
 
       } catch (err) {
         errEl.textContent   = err.message;
@@ -236,14 +238,23 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password })
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error("Invalid JSON:", text);
+          throw new Error('Invalid JSON response from server');
+        }
 
         if (!res.ok) throw new Error(data.message || 'Registration failed');
 
-        const role = inferRole(email, data.role);
-        setAuthData(data.token, { name: data.name, email: data.email, role });
+        const payload = data.data;
+        const role = inferRole(email, payload.role);
+        setAuthData(payload.token, { name: payload.name, email: payload.email, role });
 
-        window.location.replace(role === 'marketer' ? '/marketer' : '/customer');
+        const destination = role === 'marketer' ? '/marketer' : '/customer';
+        window.location.replace(destination);
 
       } catch (err) {
         errEl.textContent   = err.message;

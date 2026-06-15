@@ -31,6 +31,10 @@ const getDashboardData = async (req, res) => {
     }
 
     // 2. Fetch data within range
+    const marketerId = req.user._id;
+    const marketerCampaigns = await Campaign.find({ userId: marketerId });
+    const campaignIds = marketerCampaigns.map(c => c._id);
+
     const totalCustomers = await User.countDocuments({ role: 'customer' });
     const orders = await Order.find({ purchaseDate: { $gte: start, $lte: end } });
     const totalOrders = orders.length;
@@ -44,13 +48,15 @@ const getDashboardData = async (req, res) => {
     const activeCustomers = totalCustomers - dormantCustomers;
 
     const campaignsSent = await Campaign.countDocuments({ 
+      userId: marketerId,
       status: 'Sent',
       createdAt: { $gte: start, $lte: end }
     });
 
     // 3. Campaign Success Rate & Revenue Influenced
-    const totalComms = await Communication.countDocuments({ sentAt: { $gte: start, $lte: end } });
+    const totalComms = await Communication.countDocuments({ campaignId: { $in: campaignIds }, sentAt: { $gte: start, $lte: end } });
     const convertedComms = await Communication.countDocuments({ 
+      campaignId: { $in: campaignIds },
       sentAt: { $gte: start, $lte: end },
       status: 'Converted'
     });
@@ -59,6 +65,7 @@ const getDashboardData = async (req, res) => {
     // Calculate revenue influenced dynamically
     let revenueInfluenced = 0;
     const conversionLogs = await Communication.find({
+      campaignId: { $in: campaignIds },
       status: 'Converted',
       updatedAt: { $gte: start, $lte: end }
     });
@@ -194,6 +201,7 @@ const getDashboardData = async (req, res) => {
 
     // 7. Campaign Performance
     const campaignsList = await Campaign.find({ 
+      userId: marketerId,
       status: 'Sent',
       createdAt: { $gte: start, $lte: end }
     }).limit(6);
@@ -231,141 +239,126 @@ const getDashboardData = async (req, res) => {
     });
 
     res.json({
-      kpis: {
-        totalCustomers,
-        totalOrders,
-        totalRevenue: Math.round(totalRevenue),
-        aov: Math.round(aov),
-        activeCustomers,
-        dormantCustomers,
-        campaignsSent,
-        conversionRate: Math.round(conversionRate * 10) / 10,
-        revenueInfluenced: Math.round(revenueInfluenced)
-      },
-      charts: {
-        revenueTrend,
-        ordersTrend,
-        customerGrowth,
-        segmentDistribution,
-        campaignPerformance
-      },
-      aiRecommendations
+      success: true,
+      data: {
+        kpis: {
+          totalCustomers,
+          totalOrders,
+          totalRevenue: Math.round(totalRevenue),
+          aov: Math.round(aov),
+          activeCustomers,
+          dormantCustomers,
+          campaignsSent,
+          conversionRate: Math.round(conversionRate * 10) / 10,
+          revenueInfluenced: Math.round(revenueInfluenced)
+        },
+        charts: {
+          revenueTrend,
+          ordersTrend,
+          customerGrowth,
+          segmentDistribution,
+          campaignPerformance
+        },
+        aiRecommendations
+      }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 const getActivityStream = async (req, res) => {
   try {
     const limit = 30;
+    const currentUserId = req.user._id;
 
-    // 1. Fetch campaigns (launched)
-    const campaigns = await Campaign.find({ status: { $in: ['Sent', 'Executing'] } })
-      .sort({ createdAt: -1 })
-      .limit(limit);
+    // Fetch campaigns created by the current user
+    const campaigns = await Campaign.find({ userId: currentUserId }).sort({ createdAt: -1 });
 
-    // 2. Fetch failures
-    const failures = await Communication.find({ status: 'Failed' })
-      .populate('userId')
-      .populate('campaignId')
-      .sort({ failedAt: -1, updatedAt: -1 })
-      .limit(limit);
-
-    // 3. Fetch delivered
-    const delivered = await Communication.find({ status: 'Delivered' })
-      .populate('userId')
-      .populate('campaignId')
-      .sort({ deliveredAt: -1, updatedAt: -1 })
-      .limit(limit);
-
-    // 4. Fetch signups
-    const signups = await User.find({ role: 'customer' })
-      .sort({ createdAt: -1 })
-      .limit(limit);
-
-    // 5. Fetch purchases
-    const purchases = await Order.find({})
-      .populate('userId')
-      .sort({ purchaseDate: -1 })
-      .limit(limit);
-
-    // 6. Fetch login events from Analytics
-    const Analytics = require('../models/Analytics');
-    const loginLogDoc = await Analytics.findOne({ key: 'login_events' });
-    const logins = loginLogDoc ? (loginLogDoc.value || []) : [];
+    if (campaigns.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
 
     const events = [];
 
-    campaigns.forEach(c => {
+    for (const c of campaigns) {
+      // 1. Campaign Created
       events.push({
-        id: c._id,
-        type: 'campaign_launched',
-        title: `Campaign '${c.name}' launched via ${c.channel}`,
-        timestamp: c.createdAt,
-        meta: { campaignId: c._id }
+        id: `created_${c._id}`,
+        type: 'campaign_created',
+        title: `Campaign '${c.name}' created`,
+        timestamp: c.createdAt
       });
-    });
 
-    failures.forEach(f => {
+      // 2. Audience Segmented
       events.push({
-        id: f._id,
-        type: 'campaign_failed',
-        title: `Delivery failed for ${f.userId ? f.userId.email : 'customer'} on campaign '${f.campaignId ? f.campaignId.name : 'Campaign'}'`,
-        timestamp: f.failedAt || f.updatedAt,
-        meta: { campaignId: f.campaignId ? f.campaignId._id : null, userId: f.userId ? f.userId._id : null }
+        id: `segmented_${c._id}`,
+        type: 'audience_segmented',
+        title: `Audience segmented for '${c.name}'`,
+        timestamp: new Date(c.createdAt.getTime() + 2000)
       });
-    });
 
-    delivered.forEach(d => {
-      events.push({
-        id: d._id,
-        type: 'campaign_delivered',
-        title: `Campaign '${d.campaignId ? d.campaignId.name : 'Campaign'}' delivered to ${d.userId ? d.userId.email : 'customer'}`,
-        timestamp: d.deliveredAt || d.updatedAt,
-        meta: { campaignId: d.campaignId ? d.campaignId._id : null, userId: d.userId ? d.userId._id : null }
-      });
-    });
+      if (c.status === 'Sent' || c.status === 'Executing') {
+        // 3. Messages Dispatched
+        events.push({
+          id: `dispatched_${c._id}`,
+          type: 'messages_dispatched',
+          title: `Messages dispatched for campaign '${c.name}'`,
+          timestamp: new Date(c.createdAt.getTime() + 5000)
+        });
 
-    signups.forEach(s => {
-      events.push({
-        id: s._id,
-        type: 'customer_signup',
-        title: `New customer ${s.name} (${s.email}) signed up`,
-        timestamp: s.createdAt,
-        meta: { userId: s._id }
-      });
-    });
+        // 4. Opens Recorded
+        const openCount = await Communication.countDocuments({
+          campaignId: c._id,
+          status: { $in: ['Opened', 'Clicked', 'Converted'] }
+        });
+        if (openCount > 0) {
+          const latestOpen = await Communication.findOne({
+            campaignId: c._id,
+            status: { $in: ['Opened', 'Clicked', 'Converted'] }
+          }).sort({ openedAt: -1, updatedAt: -1 });
+          events.push({
+            id: `opens_${c._id}`,
+            type: 'opens_recorded',
+            title: `${openCount} open${openCount > 1 ? 's' : ''} recorded for campaign '${c.name}'`,
+            timestamp: latestOpen.openedAt || latestOpen.updatedAt || new Date(c.createdAt.getTime() + 10000)
+          });
+        }
 
-    purchases.forEach(p => {
-      events.push({
-        id: p._id,
-        type: 'purchase',
-        title: `Order placed by ${p.userId ? p.userId.name : 'customer'} for ₹${p.totalAmount.toLocaleString('en-IN')}`,
-        timestamp: p.purchaseDate,
-        meta: { orderId: p._id, amount: p.totalAmount, userId: p.userId ? p.userId._id : null }
-      });
-    });
+        // 5. Clicks Recorded
+        const clickCount = await Communication.countDocuments({
+          campaignId: c._id,
+          status: { $in: ['Clicked', 'Converted'] }
+        });
+        if (clickCount > 0) {
+          const latestClick = await Communication.findOne({
+            campaignId: c._id,
+            status: { $in: ['Clicked', 'Converted'] }
+          }).sort({ clickedAt: -1, updatedAt: -1 });
+          events.push({
+            id: `clicks_${c._id}`,
+            type: 'clicks_recorded',
+            title: `${clickCount} click${clickCount > 1 ? 's' : ''} recorded for campaign '${c.name}'`,
+            timestamp: latestClick.clickedAt || latestClick.updatedAt || new Date(c.createdAt.getTime() + 15000)
+          });
+        }
 
-    logins.forEach((log, index) => {
-      events.push({
-        id: `login_${log.timestamp ? new Date(log.timestamp).getTime() : index}_${log.email}`,
-        type: 'login_event',
-        title: `User ${log.email} (${log.role}) logged in successfully`,
-        timestamp: log.timestamp || new Date(),
-        meta: { email: log.email, role: log.role }
-      });
-    });
+        // 6. Brand Memory Updated
+        events.push({
+          id: `brand_${c._id}`,
+          type: 'brand_memory_updated',
+          title: `Brand memory updated for campaign '${c.name}'`,
+          timestamp: new Date(c.createdAt.getTime() + 20000)
+        });
+      }
+    }
 
-    // Sort events descending (newest first)
+    // Sort descending (newest first)
     events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    // Slice to limit
-    const stream = events.slice(0, 30);
-
-    res.json({ success: true, data: stream });
+    res.json({ success: true, data: events.slice(0, limit) });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

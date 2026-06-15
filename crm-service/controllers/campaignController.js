@@ -8,21 +8,19 @@ const { executeCampaign } = require('../services/execution');
 // @access  Private (Marketer)
 const getCampaigns = async (req, res) => {
   try {
-    const campaigns = await Campaign.find({}).sort('-createdAt');
-    res.json(campaigns);
+    const campaigns = await Campaign.find({ userId: req.user._id }).sort('-createdAt');
+    res.json({ success: true, data: campaigns });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Create a new campaign draft
-// @route   POST /api/campaigns
-// @access  Private (Marketer)
 const createCampaign = async (req, res) => {
   const { name, goal, targetSegment, objective, channel, subject, messageTemplate, callToAction, expectedConversion } = req.body;
 
   try {
     const campaign = await Campaign.create({
+      userId: req.user._id,
       name,
       goal,
       targetSegment,
@@ -35,32 +33,30 @@ const createCampaign = async (req, res) => {
       status: 'Draft'
     });
 
-    res.status(201).json(campaign);
+    console.log(`[CAMPAIGN STEP 1: CREATED] Campaign ID: ${campaign._id} | Name: ${campaign.name}`);
+
+    res.status(201).json({ success: true, data: campaign });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Execute a campaign (send messages)
-// @route   POST /api/campaigns/:id/execute
-// @access  Private (Marketer)
 const runCampaign = async (req, res) => {
   try {
-    const campaign = await Campaign.findById(req.params.id);
+    const campaign = await Campaign.findOne({ _id: req.params.id, userId: req.user._id });
 
     if (!campaign) {
-      return res.status(404).json({ message: 'Campaign not found' });
+      return res.status(404).json({ success: false, message: 'Campaign not found' });
     }
 
     campaign.status = 'Sent';
     await campaign.save();
 
-    // Run execution in the background
     executeCampaign(campaign);
 
-    res.json({ message: 'Campaign execution started', campaign });
+    res.json({ success: true, data: { message: 'Campaign execution started', campaign } });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -80,11 +76,11 @@ const STATUS_RANKS = {
 const updateReceipt = async (req, res) => {
   const { communicationId, status } = req.body;
 
-  console.log(`[RECEIPT CALLBACK RECEIVED] CommunicationID: ${communicationId} | Status: ${status}`);
+  console.log(`[CAMPAIGN STEP 5: CALLBACK RECEIVED] CommunicationID: ${communicationId} | Incoming Status: ${status}`);
 
   if (!communicationId || !status) {
     console.warn(`[RECEIPT CALLBACK FAILED] Missing communicationId or status`);
-    return res.status(400).json({ message: 'Missing communicationId or status' });
+    return res.status(400).json({ success: false, message: 'Missing communicationId or status' });
   }
 
   try {
@@ -92,7 +88,7 @@ const updateReceipt = async (req, res) => {
 
     if (!communication) {
       console.warn(`[RECEIPT CALLBACK FAILED] Communication record ${communicationId} not found`);
-      return res.status(404).json({ message: 'Communication record not found' });
+      return res.status(404).json({ success: false, message: 'Communication record not found' });
     }
 
     const currentRank = STATUS_RANKS[communication.status] || 1;
@@ -101,7 +97,7 @@ const updateReceipt = async (req, res) => {
     // Check if duplicate or backwards transition
     if (incomingRank <= currentRank) {
       console.log(`[RECEIPT CALLBACK SKIPPED] Backwards/duplicate transition: ${communication.status} -> ${status}`);
-      return res.status(200).json({ message: 'Already processed' });
+      return res.status(200).json({ success: true, data: { message: 'Already processed' } });
     }
 
     // Process valid transition
@@ -118,10 +114,12 @@ const updateReceipt = async (req, res) => {
 
     await communication.save();
 
-    res.json({ message: 'Receipt status updated', communication });
+    console.log(`[CAMPAIGN STEP 6: ANALYTICS UPDATED] CommunicationID: ${communicationId} | New Status: ${communication.status} | Saved successfully`);
+
+    res.json({ success: true, data: { message: 'Receipt status updated', communication } });
   } catch (error) {
     console.error(`[RECEIPT CALLBACK ERROR] Error:`, error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -131,6 +129,10 @@ const updateReceipt = async (req, res) => {
 const getCampaignTelemetry = async (req, res) => {
   try {
     const campaignId = req.params.id;
+    const campaign = await Campaign.findOne({ _id: campaignId, userId: req.user._id });
+    if (!campaign) {
+      return res.status(404).json({ success: false, message: 'Campaign not found' });
+    }
     
     // Aggregate counts
     const sent = await Communication.countDocuments({ campaignId });
@@ -155,15 +157,18 @@ const getCampaignTelemetry = async (req, res) => {
     });
 
     res.json({
-      sent,
-      failed,
-      delivered,
-      opened,
-      clicked,
-      converted
+      success: true,
+      data: {
+        sent,
+        failed,
+        delivered,
+        opened,
+        clicked,
+        converted
+      }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -243,9 +248,9 @@ const getCustomerCampaigns = async (req, res) => {
       });
     }
 
-    res.json(campaigns);
+    res.json({ success: true, data: campaigns });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -255,7 +260,7 @@ const getCustomerCampaigns = async (req, res) => {
 const getCampaignExplanation = async (req, res) => {
   try {
     const campaignId = req.params.id;
-    const campaign = await Campaign.findById(campaignId);
+    const campaign = await Campaign.findOne({ _id: campaignId, userId: req.user._id });
     if (!campaign) {
       return res.status(404).json({ success: false, error: 'Campaign not found' });
     }
@@ -341,7 +346,7 @@ const getUnseenNotification = async (req, res) => {
       .populate('campaignId');
 
     if (!notif || !notif.campaignId) {
-      return res.json(null);
+      return res.json({ success: true, data: null });
     }
 
     // Personalize campaign message
@@ -349,27 +354,27 @@ const getUnseenNotification = async (req, res) => {
     const personalizedMsg = personalizeMessage(notif.campaignId.messageTemplate, req.user, lastOrder, totalSpent);
 
     res.json({
-      _id: notif._id,
-      campaignId: {
-        _id: notif.campaignId._id,
+      success: true,
+      data: {
+        _id: notif._id,
+        campaignId: {
+          _id: notif.campaignId._id,
+          name: notif.campaignId.name,
+          subject: notif.campaignId.subject,
+          messageTemplate: personalizedMsg,
+          channel: notif.campaignId.channel
+        },
         name: notif.campaignId.name,
         subject: notif.campaignId.subject,
         messageTemplate: personalizedMsg,
         channel: notif.campaignId.channel
-      },
-      name: notif.campaignId.name,
-      subject: notif.campaignId.subject,
-      messageTemplate: personalizedMsg,
-      channel: notif.campaignId.channel
+      }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Mark campaign notification popup as seen
-// @route   PUT /api/campaigns/notifications/:id/seen
-// @access  Private (Customer)
 const markNotificationSeen = async (req, res) => {
   try {
     const notif = await CampaignNotification.findOneAndUpdate(
@@ -378,17 +383,14 @@ const markNotificationSeen = async (req, res) => {
       { new: true }
     );
     if (!notif) {
-      return res.status(404).json({ message: 'Notification not found' });
+      return res.status(404).json({ success: false, message: 'Notification not found' });
     }
-    res.json({ success: true, message: 'Notification marked as seen' });
+    res.json({ success: true, data: { message: 'Notification marked as seen' } });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Mark campaign delivery status as opened when viewed by customer
-// @route   POST /api/campaigns/communication/:campaignId/open
-// @access  Private (Customer)
 const markCommunicationOpened = async (req, res) => {
   try {
     const comm = await Communication.findOne({
@@ -396,14 +398,15 @@ const markCommunicationOpened = async (req, res) => {
       campaignId: req.params.campaignId
     });
 
-    if (comm && comm.status === 'Sent') {
+    if (comm && (comm.status === 'Sent' || comm.status === 'Delivered')) {
       comm.status = 'Opened';
+      comm.openedAt = new Date();
       comm.updatedAt = new Date();
       await comm.save();
     }
-    res.json({ success: true });
+    res.json({ success: true, data: { opened: true } });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

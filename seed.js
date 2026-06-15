@@ -80,7 +80,7 @@ async function seed() {
 
   // 2. Create Marketer Account
   console.log('Seeding marketer account...');
-  await User.create({
+  const marketer = await User.create({
     name: 'Xeno Marketer',
     email: 'marketer@xeno.com',
     password: 'password123',
@@ -327,6 +327,7 @@ async function seed() {
   
   const sampleCampaignsData = [
     {
+      userId: marketer._id,
       name: 'Diwali Festival Bonanza',
       goal: 'Promote traditional wear during festive seasons',
       targetSegment: 'Festival Buyers',
@@ -340,6 +341,7 @@ async function seed() {
       createdAt: new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000)
     },
     {
+      userId: marketer._id,
       name: 'Reactivate Dormant Shoppers',
       goal: 'Win back users who did not buy recently',
       targetSegment: 'Dormant Shoppers',
@@ -353,6 +355,7 @@ async function seed() {
       createdAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000)
     },
     {
+      userId: marketer._id,
       name: 'VIP Product Premiere',
       goal: 'Reward premium buyers with early access',
       targetSegment: 'Premium Buyers',

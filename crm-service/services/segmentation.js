@@ -55,8 +55,11 @@ const refreshSegments = async () => {
       // Sort orders by purchaseDate ascending
       userOrders.sort((a, b) => new Date(a.purchaseDate) - new Date(b.purchaseDate));
 
-      // 1. New Shoppers
-      if (userOrders.length > 0 && new Date(userOrders[0].purchaseDate) >= thirtyDaysAgo) {
+      // 1. New Shoppers (registered within last 30 days OR first purchase within last 30 days)
+      const registeredDate = customer.createdAt ? new Date(customer.createdAt) : now;
+      const isNewUser = registeredDate >= thirtyDaysAgo;
+      const isNewPurchaser = userOrders.length > 0 && new Date(userOrders[0].purchaseDate) >= thirtyDaysAgo;
+      if (isNewUser || isNewPurchaser) {
         segmentMemberships['New Shoppers'].push(customer._id);
       }
 

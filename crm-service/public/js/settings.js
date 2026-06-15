@@ -2,7 +2,7 @@ let currentUser = null;
 let currentWidgets = [];
 
 const WIDGET_LABELS = {
-  'today-tasks': { name: "Today's Tasks", desc: "Checlist of recommended marketer activities" },
+  'campaign-summary': { name: "Campaign Summary", desc: "Summary of recently executed or scheduled campaigns" },
   'kpis': { name: "Key Metrics & KPIs", desc: "Success rate, revenue influenced, total revenue, and campaigns dispatched" },
   'recent-activity': { name: "Recent Activity Timeline", desc: "Live-updating logs of recently executed campaigns" },
   'quick-actions': { name: "Quick Actions", desc: "One-click shortcuts to key creator pages" },
@@ -161,7 +161,7 @@ window.savePreferences = async () => {
 
 window.resetDefaultPrefs = () => {
   currentWidgets = [
-    { id: 'today-tasks', visible: true, order: 0 },
+    { id: 'campaign-summary', visible: true, order: 0 },
     { id: 'kpis', visible: true, order: 1 },
     { id: 'recent-activity', visible: true, order: 2 },
     { id: 'quick-actions', visible: true, order: 3 },
