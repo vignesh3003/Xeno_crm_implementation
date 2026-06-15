@@ -215,7 +215,7 @@ async function loadCampaignsHistory() {
             status = 'Success';
             badgeClass = 'badge-success';
           } else if (cnvPct < 5 || failPct >= 20) {
-            status = 'Failed';
+            status = 'Underperforming';
             badgeClass = 'badge-danger';
           } else {
             status = 'Mixed';
@@ -348,7 +348,7 @@ window.viewExplanation = async (campaignId) => {
         <div>
           <span style="font-size:0.75rem; text-transform:uppercase; color:var(--text-3); font-weight:600; letter-spacing:0.05em;">Campaign Status</span>
           <div style="margin-top:0.25rem;">
-            <span class="badge ${report.status === 'Success' ? 'badge-success' : report.status === 'Failed' ? 'badge-danger' : 'badge-warning'}">${report.status || 'Mixed'}</span>
+            <span class="badge ${report.status === 'Success' ? 'badge-success' : report.status === 'Underperforming' ? 'badge-danger' : 'badge-warning'}">${report.status || 'Mixed'}</span>
           </div>
         </div>
         <div>

@@ -283,7 +283,7 @@ const getCampaignExplanation = async (req, res) => {
     } else if (conversionRate >= 15 && failedRate < 10) {
       status = 'Success';
     } else if (conversionRate < 5 || failedRate >= 20) {
-      status = 'Failed';
+      status = 'Underperforming';
     } else {
       status = 'Mixed';
     }
