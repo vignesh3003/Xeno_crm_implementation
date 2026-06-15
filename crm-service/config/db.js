@@ -20,6 +20,7 @@ const connectDB = async () => {
           }
         }
         uri = parsed.toString();
+        process.env.MONGODB_URI = uri;
       } catch (err) {
         console.warn('Failed to parse MONGODB_URI URL, using original value:', err.message);
       }

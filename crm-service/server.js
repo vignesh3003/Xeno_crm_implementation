@@ -145,6 +145,30 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`CRM Service running on port ${PORT}`);
+
+  // Check if database is empty and auto-seed in the background to ensure first-time startup works out of the box
+  try {
+    const User = require('./models/User');
+    const count = await User.countDocuments();
+    if (count === 0) {
+      console.log('Database is empty. Triggering database auto-seeding in the background...');
+      const { fork } = require('child_process');
+      const path = require('path');
+      const seederPath = path.join(__dirname, 'seed.js');
+      
+      const child = fork(seederPath, [], {
+        env: { ...process.env }
+      });
+      
+      child.on('close', (code) => {
+        console.log(`Database auto-seeding completed. Child process exited with code ${code}`);
+      });
+    } else {
+      console.log('Database already has records. Skipping auto-seed.');
+    }
+  } catch (err) {
+    console.error('Failed to run database auto-seeding check:', err.message);
+  }
 });
